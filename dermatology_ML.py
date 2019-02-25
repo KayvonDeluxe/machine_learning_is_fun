@@ -9,8 +9,13 @@ from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import RandomForestClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.svm import SVC
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import mean_squared_error
+from sklearn.grid_search import GridSearchCV
+from sklearn.metrics import confusion_matrix
+from sklearn.metrics import classification_report
 
 
 def calculate_vif_(X, thresh=5.0):
@@ -35,25 +40,27 @@ def calculate_vif_(X, thresh=5.0):
 
 
 def assess_results(test_y, test_predictions):
-	''' Calculate RMSE.  Assess percent correct.  Print some basic results. '''
-	prediction_mse = mean_squared_error(test_y, test_predictions)
-	prediction_rmse = int(round(np.sqrt(prediction_mse),2)*100)
-
+	''' Assess percent correct.  Print some basic results. '''
 	test_predict_df = pd.DataFrame(data=test_predictions[:,:], columns=label_columns)  # 1st row as the column names
 	test_y = test_y.reset_index(drop=True)
-	side_by_side = pd.concat([test_y.idxmax(axis=1), test_predict_df.idxmax(axis=1)], axis=1)
+
+	test_y_argmax = test_y.idxmax(axis=1)
+	test_predict_argmax = test_predict_df.idxmax(axis=1)
+	side_by_side = pd.concat([test_y_argmax, test_predict_argmax], axis=1)
 	side_by_side.columns=["Answer", "Prediction"]
 
 	num_matching = 0
 	total = 0
-
 	for index, row in side_by_side.iterrows():
 	    total += 1
 	    if row['Answer'] == row['Prediction']:
 	        num_matching += 1
 
-	print(str(num_matching) + " / " + str(total) + " - " + str(round(num_matching/total,2)*100) + "%")
-	print("RMSE: " + str(prediction_rmse) + "%")
+	print("Accuracy: " + str(num_matching) + " / " + str(total) + " - " + str(round(num_matching/total,2)*100) + "%")
+	print("\nConfusion Matrix:\n")
+	print(confusion_matrix(test_y_argmax, test_predict_argmax))
+	print("\n\nClassification Report:\n")
+	print(classification_report(test_y_argmax, test_predict_argmax))
 	return
 
 
@@ -65,6 +72,9 @@ def assess_results(test_y, test_predictions):
 
 data = pd.read_csv('dermatologywheaders.csv')
 label_columns = ["psoriasis", "seboreic dermatitis", "lichen planus", "pityriasis rosea", "chronic dermatitis", "pityriasis rubra pilaris"]
+
+
+data.describe()
 
 # would be able to replace with median with imputer, except that doesn't use NaN with this dataset, uses "?". =/
 data_without_unknown_ages = data[data.Age != "?"]
@@ -134,31 +144,90 @@ test_x.to_csv('test_x.csv', sep=',', index=False)
 ###################################################################
 
 
-print("\n\n*********** Linear Regression ***********")
+print("\n")
+print("*****************************************")
+print("*********** Linear Regression ***********")
+print("*****************************************")
 lin_reg = LinearRegression()
 lin_reg.fit(train_x, train_y)
 test_predictions = lin_reg.predict(test_x)
 assess_results(test_y, test_predictions)
 
 
-print("\n\n*********** Logistic Regression -- One vs Rest ***********")
+
+print("\n")
+print("**********************************************************")
+print("*********** Logistic Regression -- One vs Rest ***********")
+print("**********************************************************")
 log_reg = OneVsRestClassifier(LogisticRegression())
 log_reg.fit(train_x, train_y)
 test_predictions = log_reg.predict(test_x)
 assess_results(test_y, test_predictions)
 
 
-print("\n\n*********** Random Forests ***********")
+
+print("\n")
+print("**************************************")
+print("*********** Random Forests ***********")
+print("**************************************")
 rand_forest = RandomForestClassifier(n_estimators=100)
 rand_forest.fit(train_x, train_y)
 test_predictions = rand_forest.predict(test_x)
 assess_results(test_y, test_predictions)
 
 
-print("\n\n*********** Artificial Neural Network \"Multi-Layer Perceptron Classifier\" ***********")
-neural_net = MLPClassifier(hidden_layer_sizes=(13,13,13),max_iter=500)
+
+print("\n")
+print("***************************************************************************************")
+print("*********** Artificial Neural Network \"Multi-Layer Perceptron Classifier\" ***********")
+print("***************************************************************************************")
+neural_net = MLPClassifier(hidden_layer_sizes=(20,20,20), max_iter=1500)
 neural_net.fit(train_x, train_y)
 test_predictions = neural_net.predict(test_x)
 assess_results(test_y, test_predictions)
 
+
+
+print("\n")
+print("*******************************************")
+print("*********** K Nearest Neighbors ***********")
+print("*******************************************")
+k_near_neighbor = KNeighborsClassifier(n_neighbors=3)
+k_near_neighbor.fit(train_x, train_y)
+test_predictions = k_near_neighbor.predict(test_x)
+assess_results(test_y, test_predictions)
+
+
+
+print("\n")
+print("**********************************************")
+print("*********** Support Vector Machine ***********")
+print("**********************************************")
+support_vect_mach = SVC(kernel='poly')
+train_y_stacked = train_y.stack()
+train_y_reverse_dummy = pd.Series(pd.Categorical(train_y_stacked[train_y_stacked!=0].index.get_level_values(1)))
+
+test_y_stacked = test_y.stack()
+test_y_reverse_dummy = pd.Series(pd.Categorical(test_y_stacked[test_y_stacked!=0].index.get_level_values(1)))
+
+param_grid = {'C': [0.01, 0.1, 1, 10, 100], 'kernel': ['rbf', 'linear']}
+support_vect_mach = GridSearchCV(SVC(class_weight='balanced'), param_grid)
+support_vect_mach = support_vect_mach.fit(train_x, train_y_reverse_dummy)
+#print("Best estimator found by grid search:", support_vect_mach.best_estimator_)
+
+support_vect_mach_best_params = SVC(**support_vect_mach.best_params_)
+support_vect_mach_best_params = support_vect_mach_best_params.fit(train_x, train_y_reverse_dummy)
+test_predictions = support_vect_mach_best_params.predict(test_x)
+num_matching = 0
+total = 0
+for p, t in zip(test_predictions, test_y_reverse_dummy):
+	total += 1
+	if p == t:
+		num_matching += 1
+
+print("Accuracy: " + str(num_matching) + " / " + str(total) + " - " + str(round(num_matching/total,2)*100) + "%")
+print("\nConfusion Matrix: ")
+print(confusion_matrix(test_y_reverse_dummy, test_predictions))
+print("\n\nClassification Report: ")
+print(classification_report(test_y_reverse_dummy, test_predictions))
 
