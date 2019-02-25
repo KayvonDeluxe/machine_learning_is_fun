@@ -14,21 +14,24 @@ Obvs you need to install dependencies such as sklearn, pandas, numpy, etc.
 
 Here is a sample of its output.
 
-          *********** Linear Regression ***********
-          72 / 74 - 97.0%
-          RMSE: 15%
+         *********** Linear Regression ***********
+         70 / 74 - 95.0%
+         RMSE: 17%
 
-          *********** Logistic Regression -- One vs Rest ***********
-          69 / 74 - 93.0%
-          RMSE: 14%
 
-          *********** Random Forests ***********
-          71 / 74 - 96.0%
-          RMSE: 11%
+         *********** Logistic Regression -- One vs Rest ***********
+         70 / 74 - 95.0%
+         RMSE: 12%
 
-          *********** Artificial Neural Network "Multi-Layer Perceptron Classifier" ***********
-          71 / 74 - 96.0%
-          RMSE: 11%
+
+         *********** Random Forests ***********
+         72 / 74 - 97.0%
+         RMSE: 9%
+
+
+         *********** Artificial Neural Network "Multi-Layer Perceptron Classifier" ***********
+         73 / 74 - 99.0%
+         RMSE: 7%
 
 
 
