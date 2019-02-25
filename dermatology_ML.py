@@ -3,17 +3,14 @@
 import pandas as pd
 import numpy as np
 from sklearn import preprocessing
-from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import train_test_split
 from statsmodels.stats.outliers_influence import variance_inflation_factor    
-from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
 from sklearn.linear_model import LinearRegression
 from sklearn.linear_model import LogisticRegression
 from sklearn.multiclass import OneVsRestClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.neural_network import MLPClassifier
 from sklearn.metrics import mean_squared_error
-from sklearn.metrics import precision_score, recall_score
 
 
 def calculate_vif_(X, thresh=5.0):
