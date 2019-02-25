@@ -1,4 +1,4 @@
-# machine_learning_is_fun-
+# machine_learning_is_fun
 
 Just a small program I made for fun while reading about machine learning.  Took me a few hours to make it.
 The program attemts to use clinical findings and histopathological features to classify a dermatologic condition as one of the following:
